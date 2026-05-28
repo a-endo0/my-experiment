@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Muller-Lyer Illusion Experiment</title>
+    <!-- jsPsych v7.3系 ライブラリの読み込み -->
+    <script src="https://unpkg.com/jspsych@7.3.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response@1.1.3"></script>
+    <!-- 参加者情報入力のためのプラグインを追加 -->
+    <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
+    <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
+    
+    <style>
+        /* レイアウトの安定性と中央配置のためのCSS */
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: sans-serif;
+        }
+        /* jsPsychのコンテナを強制的に中央揃え */
+        .jspsych-display-element {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .instruction-text, .prompt-text {
+            color: #333;
+            line-height: 1.6;
+        }
+        .prompt-container {
+            margin-top: 20px;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // jsPsychの初期化
+        const jsPsych = initJsPsych();
+
+        // ==========================================
+        // 実験デザインと条件設定
+        // ==========================================
+        const angles = [15, 75]; // 羽の角度
+        const lengths = [20, 50]; // 羽の長さ
+        let factors = [];
+        for (let a of angles) {
+            for (let l of lengths) {
+                factors.push({ angle: a, wing_length: l });
+            }
+        }
+        
+        let trials_info = [];
+        // 4条件 × 3回 = 全12試行
+        for (let i = 0; i < 3; i++) {
+            trials_info = trials_info.concat(factors);
+        }
+        // 試行順序のランダム化
+        trials_info = jsPsych.randomization.shuffle(trials_info);
+
+        // ==========================================
+        // 描画ロジック (Canvasへの描画)
+        // ==========================================
+        function drawMullerLyer(canvas, standardLength, compLength, angle, wingLength) {
+            let ctx = canvas.getContext('2d');
+            // Canvasをクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#000000';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            let centerX = canvas.width / 2;
+            
+            // --- 上：標準刺激（内向き羽） ---
+            let startY = 120; // キャンバス内のY座標
+            let startX = centerX - standardLength / 2;
+            let endX = centerX + standardLength / 2;
+            
+            // 主線の描画
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, startY);
+            ctx.stroke();
+            
+            // 羽の描画（isInner = true）
+            drawWings(ctx, startX, startY, wingLength, angle, true, true);
+            drawWings(ctx, endX, startY, wingLength, angle, false, true);
+            
+            // --- 下：比較刺激（外向き羽） ---
+            let compY = 280; // キャンバス内のY座標
+            let compStartX = centerX - compLength / 2;
+            let compEndX = centerX + compLength / 2;
+            
+            // 主線の描画
+            ctx.beginPath();
+            ctx.moveTo(compStartX, compY);
+            ctx.lineTo(compEndX, compY);
+            ctx.stroke();
+            
+            // 羽の描画（isInner = false）
+            drawWings(ctx, compStartX, compY, wingLength, angle, true, false);
+            drawWings(ctx, compEndX, compY, wingLength, angle, false, false);
+        }
+
+        function drawWings(ctx, x, y, wingLength, angleDeg, isLeft, isInner) {
+            let angleRad = angleDeg * Math.PI / 180;
+            // 羽の伸びる方向の判定 (+1: 右, -1: 左)
+            let dirX = (isLeft === isInner) ? 1 : -1;
+
+            // 上側の羽
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + dirX * wingLength * Math.cos(angleRad), y - wingLength * Math.sin(angleRad));
+            ctx.stroke();
+
+            // 下側の羽
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + dirX * wingLength * Math.cos(angleRad), y + wingLength * Math.sin(angleRad));
+            ctx.stroke();
+        }
+
+        // ==========================================
+        // 状態管理変数
+        // ==========================================
+        let trial_count = 1;
+        let current_comp_length = 0; // 比較刺激の長さ（試行ごとに更新）
+        let current_handlers = {};   // イベントリスナー管理用
+
+        // ==========================================
+        // タイムラインの構築
+        // ==========================================
+        
+        // 0. 参加者ID入力画面
+        const enter_id = {
+            type: jsPsychSurveyText,
+            questions: [
+                {prompt: '参加者IDを入力してください:', name: 'subject_id', required: true}
+            ],
+            button_label: '次へ',
+            on_finish: function(data) {
+                // 以降の全てのデータに subject_id を付加する
+                jsPsych.data.addProperties({
+                    subject_id: data.response.subject_id
+                });
+            }
+        };
+
+        // 1. 教示画面
+        const instruction = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `
+                <div class="instruction-text">
+                    <h2>ミュラー・リヤー錯視実験</h2>
+                    <p>画面に2つの線分（上下）が表示されます。</p>
+                    <p>上の線分は長さが固定されています。<br>
+                    下の線分は、<b>左右の矢印キー</b>を押すことで長さを調整できます。<br>
+                    （キーを長押しすると連続的に長さが変わります）</p>
+                    <p>下の線分の長さが、上の線分と<b>同じになった</b>と感じたら、<br>
+                    <b>スペースキー</b>を押して次の試行に進んでください。</p>
+                    <br>
+                    <p>準備ができたら、<b>スペースキー</b>を押して開始してください。</p>
+                </div>
+            `,
+            choices: [' ']
+        };
+
+        // 2. メイン試行
+        const muller_lyer_trial = {
+            type: jsPsychCanvasKeyboardResponse,
+            // 描画領域を限定 (高さ400px, 幅800px)
+            canvas_size: [400, 800],
+            // 終了判定をスペースキーのみに限定 (手動でjsPsych.finishTrialは呼ばない)
+            choices: [' '],
+            
+            // 初期の描画
+            stimulus: function(c) {
+                // 初期長さを 100 ~ 300px の間でランダムに設定
+                current_comp_length = Math.floor(Math.random() * 201) + 100;
+                
+                let angle = jsPsych.timelineVariable('angle');
+                let wing_length = jsPsych.timelineVariable('wing_length');
+                
+                // プラグインから渡されたcanvasを使って初期描画を確実に行う
+                drawMullerLyer(c, 200, current_comp_length, angle, wing_length);
+            },
+            
+            // 外部DOMを使わずpromptでUI（カウンターとガイド）を生成
+            prompt: function() {
+                return `
+                    <div class="prompt-container">
+                        <p style="font-weight: bold; font-size: 1.3rem;">Trial ${trial_count} / 12</p>
+                        <p class="prompt-text">
+                            【←】【→】キーで下の線分の長さを調整<br>
+                            上の線分と同じ長さになったら <b>スペースキー</b> で決定
+                        </p>
+                    </div>
+                `;
+            },
+            
+            // 保存するデータ
+            data: function() {
+                return {
+                    task: 'muller-lyer', // フィルター用のフラグ
+                    angle: jsPsych.timelineVariable('angle'),
+                    wing_length: jsPsych.timelineVariable('wing_length')
+                };
+            },
+            
+            // ロード時のイベントリスナーとアニメーション登録
+            on_load: function() {
+                let angle = jsPsych.timelineVariable('angle');
+                let wing_length = jsPsych.timelineVariable('wing_length');
+                
+                const canvas = document.querySelector('canvas');
+                if(!canvas) return;
+                
+                let isLeftDown = false;
+                let isRightDown = false;
+                
+                // キーダウンのハンドラ
+                const keydownHandler = (e) => {
+                    if (e.key === 'ArrowLeft') {
+                        isLeftDown = true;
+                        e.preventDefault(); // スクロール等の干渉防止
+                    }
+                    if (e.key === 'ArrowRight') {
+                        isRightDown = true;
+                        e.preventDefault();
+                    }
+                };
+                
+                // キーアップのハンドラ
+                const keyupHandler = (e) => {
+                    if (e.key === 'ArrowLeft') isLeftDown = false;
+                    if (e.key === 'ArrowRight') isRightDown = false;
+                };
+                
+                document.addEventListener('keydown', keydownHandler, { passive: false });
+                document.addEventListener('keyup', keyupHandler);
+                
+                // 長押し対応のための描画ループ
+                const update = () => {
+                    let changed = false;
+                    if (isLeftDown) {
+                        current_comp_length -= 2;
+                        if(current_comp_length < 20) current_comp_length = 20; // 下限
+                        changed = true;
+                    }
+                    if (isRightDown) {
+                        current_comp_length += 2;
+                        if(current_comp_length > 700) current_comp_length = 700; // 上限
+                        changed = true;
+                    }
+                    
+                    // 変化があった場合のみCanvasを再描画
+                    if (changed) {
+                        drawMullerLyer(canvas, 200, current_comp_length, angle, wing_length);
+                    }
+                    
+                    // 次のフレームを予約
+                    current_handlers.animId = requestAnimationFrame(update);
+                };
+                
+                // ループ開始とハンドラの保存
+                current_handlers.animId = requestAnimationFrame(update);
+                current_handlers.keydown = keydownHandler;
+                current_handlers.keyup = keyupHandler;
+            },
+            
+            // 試行終了時のクリーンアップと結果保存
+            on_finish: function(data) {
+                // DOM干渉を防ぐためリスナーを確実に解除
+                document.removeEventListener('keydown', current_handlers.keydown);
+                document.removeEventListener('keyup', current_handlers.keyup);
+                cancelAnimationFrame(current_handlers.animId);
+                
+                // 記録データの追加 (要求された変数名を使用)
+                data.standard_len = 200;
+                data.pse = current_comp_length;
+                data.error_amount = current_comp_length - 200;
+                data.timestamp = new Date().toISOString(); // 各試行のタイムスタンプ
+                
+                trial_count++;
+            }
+        };
+
+        // ループ設定
+        const test_procedure = {
+            timeline: [muller_lyer_trial],
+            timeline_variables: trials_info
+        };
+
+        // 3. データ送信および終了画面
+        const save_data = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `
+                <div class="instruction-text">
+                    <h2 id="save-status">データ送信中...</h2>
+                    <p id="save-msg">結果をサーバーに送信しています。そのままお待ちください。</p>
+                </div>
+            `,
+            choices: "NO_KEYS",
+            on_load: function() {
+                // フィルター機能: task === 'muller-lyer' の反応データ（本試行）のみ抽出
+                const exp_data = jsPsych.data.get().filter({task: 'muller-lyer'}).values();
+                
+                // 要求された構造へデータを整形
+                const payload = exp_data.map(row => ({
+                    subject_id: row.subject_id,
+                    timestamp: row.timestamp,
+                    angle: row.angle,
+                    wing_length: row.wing_length,
+                    standard_len: row.standard_len,
+                    pse: row.pse,
+                    error_amount: row.error_amount
+                }));
+
+                // fetchを使用してGAS URLへJSONデータを送信
+                // GASでのCORSエラーを回避するため 'text/plain' を指定しています
+                fetch('https://script.google.com/macros/s/AKfycby-T5vPXHlKJOy9WwTdpa6n5IMovfmuA0plP8CftzxfPRg1IupN3bgtoybQbP3teynrqg/exec', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    // 送信完了時に画面を更新
+                    document.getElementById('save-status').innerText = '実験終了';
+                    document.getElementById('save-msg').innerText = 'すべてのデータが正常に送信されました。ご協力ありがとうございました。';
+                })
+                .catch(error => {
+                    // 送信エラー時の処理
+                    document.getElementById('save-status').innerText = '送信エラー';
+                    document.getElementById('save-msg').innerText = 'データの送信に失敗しました。';
+                    console.error('Data Send Error:', error);
+                });
+            }
+        };
+
+        // 実験の実行 (参加者ID入力 -> 教示 -> メイン試行 -> データ送信/終了)
+        jsPsych.run([enter_id, instruction, test_procedure, save_data]);
+    </script>
+</body>
+</html>
