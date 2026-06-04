@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ミュラー・リヤー錯視 調整法実験</title>
+  
+  <script src="https://unpkg.com/jspsych@7.3.4"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-canvas-slider-response@1.1.3"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    body { background-color: #121214; color: #e4e4e7; font-family: sans-serif; margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .jspsych-content { max-width: 700px; width: 90%; background-color: #1e1e24; padding: 2.5rem; border-radius: 1rem; border: 1px solid #2d2d34; text-align: center; }
+    .jspsych-btn { background-color: #3b82f6 !important; color: #ffffff !important; padding: 0.75rem 2rem !important; border-radius: 0.5rem !important; }
+    input[type=range] { width: 100% !important; background-color: #3f3f46 !important; height: 6px !important; border-radius: 9999px !important; appearance: none !important; }
+    canvas { border: 1px solid #2d2d34; border-radius: 0.5rem; margin: 0 auto; display: block; }
+    .jspsych-survey-text-question input[type="text"] { width: 100%; max-width: 300px; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid #3f3f46; background-color: #27272a; color: #ffffff; text-align: center; }
+  </style>
+</head>
+<body>
+  <script>
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwEPvDHtnEdi7uyMIODSwjEGrzV3J1oBPc49WniqV2htya6Hdjb0AFmul8EuXPciroPVA/exec';
+
+    const jsPsych = initJsPsych({
+      on_finish: function() {
+        const trials = jsPsych.data.get().filter({task: 'trial'}).values();
+        const formattedResults = trials.map(t => ({
+          subject_id: t.subject_id,
+          timestamp: t.timestamp,
+          angle: t.angle,
+          wing_length: t.feather_length,
+          pse: t.adjusted_length,
+          error_amount: t.pse_error
+        }));
+
+        const stats = {};
+        trials.forEach(t => {
+          const key = `角度${t.angle}度/羽${t.feather_length}px`;
+          if (!stats[key]) stats[key] = [];
+          stats[key].push(t.pse_error);
+        });
+
+        const labels = Object.keys(stats);
+        const averages = labels.map(l => (stats[l].reduce((a, b) => a + b, 0) / stats[l].length).toFixed(1));
+
+        document.querySelector('.jspsych-content').innerHTML = `
+          <h2 class="text-2xl font-bold text-green-400 mb-4">実験終了</h2>
+          <div class="bg-zinc-800 p-4 rounded mb-6">
+            <h3 class="text-lg font-bold mb-2">平均錯覚量 (各条件)</h3>
+            <div style="height: 200px;"><canvas id="feedbackChart"></canvas></div>
+          </div>
+          <div id="status" class="p-4 text-gray-300">データを送信中...</div>
+        `;
+
+        const ctx = document.getElementById('feedbackChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: { labels: labels, datasets: [{ label: '誤差(px)', data: averages, backgroundColor: '#3b82f6' }] },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+        
+        fetch(GAS_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(formattedResults)
+        })
+        .then(() => document.getElementById('status').innerHTML = '<p class="text-green-400">送信完了しました。</p>')
+        .catch(err => document.getElementById('status').innerHTML = '<p class="text-red-400">送信失敗: ' + err.message + '</p>');
+      }
+    });
+
+    function drawMullerLyer(ctx, startX, y, length, featherLength, angleDeg, isInward) {
+      const endX = startX + length;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      ctx.beginPath();
+      ctx.moveTo(startX, y); ctx.lineTo(endX, y);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+      const direction = isInward ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(startX, y); ctx.lineTo(startX + direction * featherLength * Math.cos(angleRad), y - featherLength * Math.sin(angleRad));
+      ctx.moveTo(startX, y); ctx.lineTo(startX + direction * featherLength * Math.cos(angleRad), y + featherLength * Math.sin(angleRad));
+      ctx.moveTo(endX, y); ctx.lineTo(endX - direction * featherLength * Math.cos(angleRad), y - featherLength * Math.sin(angleRad));
+      ctx.moveTo(endX, y); ctx.lineTo(endX - direction * featherLength * Math.cos(angleRad), y + featherLength * Math.sin(angleRad));
+      ctx.stroke();
+    }
+
+    function drawStimulus(canvas, sliderValue, params) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#1e1e24'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      drawMullerLyer(ctx, centerX - 100, 110, 200, params.feather_length, params.angle, true);
+      drawMullerLyer(ctx, centerX - (sliderValue / 2), 270, sliderValue, params.feather_length, params.angle, false);
+    }
+
+    const timeline = [];
+    let subject_id = "";
+
+    timeline.push({
+      type: jsPsychSurveyText,
+      questions: [{ prompt: '参加者IDを入力してください', name: 'subject_id', required: true }],
+      button_label: '次へ',
+      on_finish: data => subject_id = data.response.subject_id
+    });
+
+    const baseConditions = [
+      { angle: 15, feather_length: 20 }, { angle: 15, feather_length: 50 },
+      { angle: 75, feather_length: 20 }, { angle: 75, feather_length: 50 }
+    ];
+    let allTrials = [];
+    for(let i=0; i<3; i++) allTrials = allTrials.concat(baseConditions);
+    allTrials = jsPsych.randomization.shuffle(allTrials);
+
+    allTrials.forEach((c, i) => {
+      const randomStart = Math.floor(Math.random() * 201) + 100;
+      timeline.push({
+        type: jsPsychCanvasSliderResponse,
+        canvas_size: [380, 500],
+        min: 50, max: 350, slider_start: randomStart,
+        button_label: '次へ',
+        prompt: `<p class="mb-4 font-bold text-blue-400">Trial ${i+1} / 12</p>`,
+        stimulus: (canvas) => drawStimulus(canvas, randomStart, c),
+        on_load: function() {
+          const canvas = document.querySelector('canvas');
+          document.querySelector('input').addEventListener('input', (e) => drawStimulus(canvas, e.target.value, c));
+        },
+        on_finish: function(data) {
+          data.task = 'trial';
+          data.subject_id = subject_id;
+          data.timestamp = new Date().toLocaleString();
+          data.angle = c.angle;
+          data.feather_length = c.feather_length;
+          data.adjusted_length = data.response;
+          data.pse_error = data.response - 200;
+        }
+      });
+    });
+
+    jsPsych.run(timeline);
+  </script>
+</body>
+</html>
