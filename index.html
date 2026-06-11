@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>尚絅学院大学遠藤歩夢の心理学実験室</title>
+    <!-- Tailwind CSS (for modern utility styling) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f0f9ff; /* 薄い水色の背景 */
+        }
+        
+        /* カスタムのグラデーションとシャドウ効果 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(224, 242, 254, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 25px -5px rgba(14, 165, 233, 0.15), 0 10px 10px -5px rgba(14, 165, 233, 0.1);
+            border-color: rgba(125, 211, 252, 1);
+        }
+
+        /* ふわっとした背景の装飾 */
+        .bg-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative overflow-x-hidden text-slate-700">
+
+    <!-- 背景の装飾用グラデーション球 -->
+    <div class="bg-blob w-[300px] h-[300px] bg-sky-200 top-[-50px] left-[-50px]"></div>
+    <div class="bg-blob w-[400px] h-[400px] bg-blue-100 bottom-[-100px] right-[-100px]"></div>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-12 max-w-5xl flex-grow flex flex-col justify-center">
+        
+        <!-- ヘッダー・紹介セクション -->
+        <header class="text-center mb-16">
+            <!-- 優しいブルーのアクセントバッジ -->
+            <span class="inline-block bg-sky-100 text-sky-800 text-xs font-semibold px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 shadow-sm border border-sky-200">
+                Psychology Laboratory
+            </span>
+            <!-- 大見出し -->
+            <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-sky-900 tracking-tight leading-tight mb-6">
+                尚絅学院大学遠藤歩夢の<br class="block sm:hidden"><span class="text-sky-600">心理学実験室</span>
+            </h1>
+            <!-- ディバイダー -->
+            <div class="w-16 h-1 bg-sky-400 mx-auto rounded-full mb-8"></div>
+            <!-- 挨拶文 -->
+            <p class="text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed px-4">
+                ご訪問ありがとうございます。以下の実験へのご協力をお願いいたします。<br class="hidden md:inline">
+                各実験は数分で終わります。スマートフォンからも参加可能です。
+            </p>
+        </header>
+
+        <!-- 実験リスト (グリッドレイアウト) -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
+            
+            <!-- 実験0: はじめてのWebページ -->
+            <article class="glass-card rounded-2xl p-8 flex flex-col justify-between shadow-lg shadow-sky-100/50">
+                <div>
+                    <!-- カード上部アイコン & ラベル -->
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-xs font-bold text-slate-400 tracking-widest uppercase">Experiment 00</span>
+                        <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
+                            <!-- Code Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                        </div>
+                    </div>
+                    <!-- タイトル -->
+                    <h2 class="text-xl font-bold text-slate-800 mb-4">はじめてのWebページ</h2>
+                    <!-- 説明文 -->
+                    <p class="text-slate-500 text-sm leading-relaxed mb-8">
+                        第2回で作成した記念すべき「Hello World」のページです。すべての始まりとなったシンプルな画面をご覧ください。
+                    </p>
+                </div>
+                <!-- ボタン -->
+                <a href="hello_world.html" class="w-full text-center py-3.5 px-4 bg-slate-600 hover:bg-slate-700 text-white font-medium rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 block shadow-sm shadow-slate-200">
+                    Hello Worldを見る
+                </a>
+            </article>
+
+            <!-- 実験1: ストループ課題 -->
+            <article class="glass-card rounded-2xl p-8 flex flex-col justify-between shadow-lg shadow-sky-100/50">
+                <div>
+                    <!-- カード上部アイコン & ラベル -->
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-xs font-bold text-sky-500 tracking-widest uppercase">Experiment 01</span>
+                        <div class="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center text-sky-600">
+                            <!-- Color/Stroop Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                            </svg>
+                        </div>
+                    </div>
+                    <!-- タイトル -->
+                    <h2 class="text-xl font-bold text-slate-800 mb-2">ストループ課題</h2>
+                    <!-- 所要時間タグ -->
+                    <span class="inline-block bg-sky-50 text-sky-600 text-xs font-medium px-2.5 py-1 rounded-md mb-4 border border-sky-100">
+                        所要時間：約3分
+                    </span>
+                    <!-- 説明文 -->
+                    <p class="text-slate-500 text-sm leading-relaxed mb-8">
+                        「文字の意味」と「文字の色」の干渉を調べる、簡単なキーボード入力のテストです。
+                    </p>
+                </div>
+                <!-- ボタン -->
+                <a href="stroop.html" class="w-full text-center py-3.5 px-4 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 block shadow-md shadow-sky-100">
+                    実験1に参加する
+                </a>
+            </article>
+
+            <!-- 実験2: ミュラー・リヤー錯視 -->
+            <article class="glass-card rounded-2xl p-8 flex flex-col justify-between shadow-lg shadow-sky-100/50">
+                <div>
+                    <!-- カード上部アイコン & ラベル -->
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-xs font-bold text-cyan-500 tracking-widest uppercase">Experiment 02</span>
+                        <div class="w-10 h-10 rounded-xl bg-cyan-100 flex items-center justify-center text-cyan-600">
+                            <!-- Visual/Illusion Icon (Slider/Measure) -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
+                        </div>
+                    </div>
+                    <!-- タイトル -->
+                    <h2 class="text-xl font-bold text-slate-800 mb-2">ミュラー・リヤー錯視</h2>
+                    <!-- 所要時間タグ -->
+                    <span class="inline-block bg-cyan-50 text-cyan-600 text-xs font-medium px-2.5 py-1 rounded-md mb-4 border border-cyan-100">
+                        所要時間：約2分
+                    </span>
+                    <!-- 説明文 -->
+                    <p class="text-slate-500 text-sm leading-relaxed mb-8">
+                        図形の長さが違って見える錯覚を測る、スライダーを使った視覚のテストです。
+                    </p>
+                </div>
+                <!-- ボタン -->
+                <a href="muller_lyer_final.html" class="w-full text-center py-3.5 px-4 bg-cyan-500 hover:bg-cyan-600 text-white font-medium rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 block shadow-md shadow-cyan-100">
+                    実験2に参加する
+                </a>
+            </article>
+
+        </section>
+
+        <!-- 注意書き等 -->
+        <footer class="mt-16 text-center text-xs text-slate-400 leading-relaxed">
+            <p>※ 本実験は学術研究・実習目的の調査となります。取得されたデータは統計的に処理され、個人の特定や目的外の使用は行いません。</p>
+        </footer>
+
+    </main>
+
+    <!-- コピーライト -->
+    <div class="w-full py-6 text-center text-xs text-slate-400 border-t border-sky-100/60 bg-white/50">
+        &copy; 2026 Ayumu Endo, Shokei Gakuin University. All rights reserved.
+    </div>
+
+</body>
+</html>
